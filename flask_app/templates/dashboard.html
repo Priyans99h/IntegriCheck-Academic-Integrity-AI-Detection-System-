@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>IntegriCheck — University Dashboard</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f5;color:#1a1a2e;}
+  .navbar{background:#1a1a2e;padding:16px 32px;display:flex;align-items:center;justify-content:space-between;}
+  .navbar h1{color:#fff;font-size:20px;font-weight:700;}
+  .navbar a{color:#4fc3f7;text-decoration:none;font-size:14px;}
+  .sidebar{width:220px;background:#fff;height:100vh;position:fixed;top:0;left:0;padding-top:70px;box-shadow:2px 0 8px rgba(0,0,0,0.07);}
+  .sidebar ul{list-style:none;padding:16px 0;}
+  .sidebar li a{display:block;padding:12px 24px;color:#555;text-decoration:none;font-size:14px;transition:all 0.2s;}
+  .sidebar li a:hover,.sidebar li a.active{background:#f0f7ff;color:#0f3460;border-left:3px solid #0f3460;font-weight:600;}
+  .main{margin-left:220px;padding:24px;padding-top:90px;}
+  .page-title{font-size:22px;font-weight:700;color:#1a1a2e;margin-bottom:20px;}
+  .stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:28px;}
+  .stat-card{background:#fff;border-radius:12px;padding:20px;box-shadow:0 2px 8px rgba(0,0,0,0.06);text-align:center;}
+  .stat-card .num{font-size:32px;font-weight:700;}
+  .stat-card .lbl{font-size:13px;color:#888;margin-top:4px;}
+  .stat-card.blue .num{color:#0f3460;}
+  .stat-card.red .num{color:#e74c3c;}
+  .stat-card.green .num{color:#27ae60;}
+  .stat-card.orange .num{color:#f39c12;}
+  .card{background:#fff;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,0.06);padding:24px;margin-bottom:20px;}
+  .card-title{font-size:16px;font-weight:700;color:#1a1a2e;margin-bottom:16px;}
+  table{width:100%;border-collapse:collapse;font-size:14px;}
+  th{text-align:left;padding:10px 14px;background:#f8f9fa;color:#555;font-weight:600;border-bottom:2px solid #e9ecef;}
+  td{padding:10px 14px;border-bottom:1px solid #f0f0f0;color:#333;}
+  tr:hover td{background:#f8f9fa;}
+  .badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600;}
+  .badge-red{background:#fce8e8;color:#c0392b;}
+  .badge-orange{background:#fef3e2;color:#d35400;}
+  .badge-green{background:#e8f8f0;color:#27ae60;}
+  .badge-blue{background:#e8f0fe;color:#0f3460;}
+  .chart-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+  .bar-wrap{margin-bottom:12px;}
+  .bar-label{font-size:13px;color:#555;margin-bottom:4px;display:flex;justify-content:space-between;}
+  .bar-bg{background:#f0f0f0;border-radius:6px;height:12px;}
+  .bar-fill{height:12px;border-radius:6px;transition:width 1s;}
+  .search-row{display:flex;gap:12px;margin-bottom:16px;}
+  .search-row input,.search-row select{padding:9px 14px;border:1.5px solid #e9ecef;border-radius:8px;font-size:14px;outline:none;flex:1;}
+  .search-row input:focus,.search-row select:focus{border-color:#0f3460;}
+  .btn-sm{padding:8px 18px;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;background:#0f3460;color:#fff;}
+</style>
+</head>
+<body>
+<nav class="navbar" style="position:fixed;width:100%;z-index:100;">
+  <h1>IntegriCheck — University Dashboard</h1>
+  <a href="/">← Back to Analyzer</a>
+</nav>
+
+<div class="sidebar">
+  <ul>
+    <li><a href="#" class="active">📊 Overview</a></li>
+    <li><a href="#">📄 Submissions</a></li>
+    <li><a href="#">🚨 Flagged</a></li>
+    <li><a href="#">👥 Students</a></li>
+    <li><a href="#">📈 Reports</a></li>
+    <li><a href="#">⚙ Settings</a></li>
+  </ul>
+</div>
+
+<div class="main">
+  <div class="page-title">Overview Dashboard</div>
+
+  <div class="stats-grid">
+    <div class="stat-card blue">
+      <div class="num" id="totalSubs">—</div>
+      <div class="lbl">Total Submissions</div>
+    </div>
+    <div class="stat-card red">
+      <div class="num" id="highRisk">—</div>
+      <div class="lbl">High Risk Flagged</div>
+    </div>
+    <div class="stat-card orange">
+      <div class="num" id="aiDetected">—</div>
+      <div class="lbl">AI Content Detected</div>
+    </div>
+    <div class="stat-card green">
+      <div class="num" id="cleanSubs">—</div>
+      <div class="lbl">Clean Submissions</div>
+    </div>
+  </div>
+
+  <div class="chart-row">
+    <div class="card">
+      <div class="card-title">Plagiarism Risk Distribution</div>
+      <div id="plagDist"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">AI Detection Rate by Department</div>
+      <div id="aiDept"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Recent Submissions</div>
+    <div class="search-row">
+      <input type="text" placeholder="Search by student or document name..." id="searchInput" oninput="filterTable()"/>
+      <select id="riskFilter" onchange="filterTable()">
+        <option value="">All Risk Levels</option>
+        <option value="HIGH">High Risk</option>
+        <option value="MEDIUM">Medium Risk</option>
+        <option value="LOW">Low Risk</option>
+        <option value="NONE">Clean</option>
+      </select>
+    </div>
+    <table id="subTable">
+      <thead>
+        <tr>
+          <th>Report ID</th><th>Student</th><th>Document</th>
+          <th>Plagiarism %</th><th>AI %</th><th>Risk</th><th>Date</th>
+        </tr>
+      </thead>
+      <tbody id="subBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+// Simulated dashboard data (in production: API se aayega)
+const submissions = [
+  {id:'A1B2C3D4', student:'Ravi Sharma',     doc:'ML Assignment 3.pdf', plag:82, ai:78, risk:'HIGH',   date:'2025-04-20'},
+  {id:'E5F6G7H8', student:'Priya Singh',     doc:'Research Paper.docx', plag:45, ai:55, risk:'MEDIUM', date:'2025-04-21'},
+  {id:'I9J0K1L2', student:'Amit Kumar',      doc:'Statistics Report.pdf',plag:12, ai:20, risk:'LOW',   date:'2025-04-22'},
+  {id:'M3N4O5P6', student:'Sneha Patel',     doc:'NLP Essay.docx',      plag:3,  ai:8,  risk:'NONE',   date:'2025-04-22'},
+  {id:'Q7R8S9T0', student:'Rahul Verma',     doc:'Data Analysis.pdf',   plag:91, ai:85, risk:'HIGH',   date:'2025-04-23'},
+  {id:'U1V2W3X4', student:'Anjali Mishra',   doc:'Final Project.docx',  plag:33, ai:62, risk:'MEDIUM', date:'2025-04-23'},
+  {id:'Y5Z6A7B8', student:'Vikram Reddy',    doc:'Capstone Draft.pdf',  plag:7,  ai:15, risk:'NONE',   date:'2025-04-24'},
+  {id:'C9D0E1F2', student:'Kavya Nair',      doc:'Thesis Chapter 2.docx',plag:58, ai:41, risk:'MEDIUM',date:'2025-04-24'},
+  {id:'G3H4I5J6', student:'Siddharth Roy',   doc:'Lab Report.pdf',      plag:74, ai:88, risk:'HIGH',   date:'2025-04-25'},
+  {id:'K7L8M9N0', student:'Pooja Iyer',      doc:'Term Paper.docx',     plag:18, ai:22, risk:'LOW',    date:'2025-04-25'},
+];
+
+function badgeHtml(risk) {
+  const m = {HIGH:'badge-red',MEDIUM:'badge-orange',LOW:'badge-blue',NONE:'badge-green'};
+  return `<span class="badge ${m[risk]||'badge-blue'}">${risk}</span>`;
+}
+
+function renderTable(data) {
+  document.getElementById('subBody').innerHTML = data.map(s => `
+    <tr>
+      <td><code>${s.id}</code></td>
+      <td>${s.student}</td>
+      <td>${s.doc}</td>
+      <td><strong style="color:${s.plag>=70?'#e74c3c':s.plag>=40?'#f39c12':'#27ae60'}">${s.plag}%</strong></td>
+      <td><strong style="color:${s.ai>=70?'#e74c3c':s.ai>=40?'#f39c12':'#27ae60'}">${s.ai}%</strong></td>
+      <td>${badgeHtml(s.risk)}</td>
+      <td>${s.date}</td>
+    </tr>`).join('');
+}
+
+function filterTable() {
+  const q    = document.getElementById('searchInput').value.toLowerCase();
+  const risk = document.getElementById('riskFilter').value;
+  const filtered = submissions.filter(s =>
+    (!q || s.student.toLowerCase().includes(q) || s.doc.toLowerCase().includes(q)) &&
+    (!risk || s.risk === risk)
+  );
+  renderTable(filtered);
+}
+
+function renderBar(containerId, items) {
+  document.getElementById(containerId).innerHTML = items.map(item => `
+    <div class="bar-wrap">
+      <div class="bar-label"><span>${item.label}</span><span>${item.value}%</span></div>
+      <div class="bar-bg"><div class="bar-fill" style="width:${item.value}%;background:${item.color}"></div></div>
+    </div>`).join('');
+}
+
+// Init
+const total  = submissions.length;
+const high   = submissions.filter(s=>s.risk==='HIGH').length;
+const aiHigh = submissions.filter(s=>s.ai>=50).length;
+const clean  = submissions.filter(s=>s.risk==='NONE').length;
+
+document.getElementById('totalSubs').textContent  = total;
+document.getElementById('highRisk').textContent   = high;
+document.getElementById('aiDetected').textContent = aiHigh;
+document.getElementById('cleanSubs').textContent  = clean;
+
+renderTable(submissions);
+
+renderBar('plagDist', [
+  {label:'High Risk (>70%)',    value: Math.round(high/total*100),                                      color:'#e74c3c'},
+  {label:'Medium Risk (40-70%)',value: Math.round(submissions.filter(s=>s.risk==='MEDIUM').length/total*100), color:'#f39c12'},
+  {label:'Low Risk (15-40%)',   value: Math.round(submissions.filter(s=>s.risk==='LOW').length/total*100),    color:'#3498db'},
+  {label:'Clean (<15%)',        value: Math.round(clean/total*100),                                     color:'#27ae60'},
+]);
+
+renderBar('aiDept', [
+  {label:'Computer Science', value:68, color:'#e74c3c'},
+  {label:'Management',       value:54, color:'#f39c12'},
+  {label:'Statistics',       value:42, color:'#3498db'},
+  {label:'Humanities',       value:31, color:'#27ae60'},
+  {label:'Engineering',      value:29, color:'#9b59b6'},
+]);
+</script>
+</body>
+</html>

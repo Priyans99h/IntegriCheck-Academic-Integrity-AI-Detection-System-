@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>IntegriCheck v4 — Academic Integrity Platform</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f5;color:#1a1a2e;min-height:100vh;}
+.navbar{background:#1a1a2e;padding:16px 32px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 2px 8px rgba(0,0,0,.3);}
+.navbar-brand{color:#fff;font-size:22px;font-weight:700;letter-spacing:1px;}
+.navbar-brand span{color:#4fc3f7;}
+.navbar-links{display:flex;gap:20px;align-items:center;}
+.navbar-links a{color:#4fc3f7;text-decoration:none;font-size:13px;}
+.hero{background:linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%);color:#fff;padding:56px 32px 44px;text-align:center;}
+.hero h2{font-size:34px;font-weight:700;margin-bottom:12px;}
+.hero p{font-size:16px;opacity:.85;max-width:600px;margin:0 auto;}
+.badges{display:flex;gap:10px;justify-content:center;margin-top:20px;flex-wrap:wrap;}
+.badge{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);padding:5px 14px;border-radius:20px;font-size:12.5px;}
+.container{max-width:900px;margin:0 auto;padding:28px 16px;}
+.card{background:#fff;border-radius:12px;box-shadow:0 2px 16px rgba(0,0,0,.08);padding:28px;margin-bottom:24px;}
+.card-title{font-size:18px;font-weight:700;color:#1a1a2e;margin-bottom:20px;display:flex;align-items:center;gap:8px;}
+.tabs{display:flex;border-bottom:2px solid #e9ecef;margin-bottom:20px;}
+.tab{padding:10px 24px;cursor:pointer;border:none;background:none;font-size:15px;color:#666;border-bottom:3px solid transparent;margin-bottom:-2px;transition:all .2s;}
+.tab.active{color:#0f3460;border-bottom-color:#0f3460;font-weight:600;}
+textarea{width:100%;min-height:160px;border:2px solid #e9ecef;border-radius:8px;padding:14px;font-size:15px;resize:vertical;outline:none;transition:border-color .2s;font-family:inherit;}
+textarea:focus{border-color:#0f3460;}
+.char-count{text-align:right;font-size:12.5px;color:#999;margin-top:4px;}
+.upload-area{border:2px dashed #cbd5e0;border-radius:8px;padding:40px;text-align:center;cursor:pointer;transition:all .2s;background:#f8f9fa;}
+.upload-area:hover,.upload-area.drag{border-color:#0f3460;background:#f0f7ff;}
+.upload-area input{display:none;}
+.upload-icon{font-size:42px;margin-bottom:8px;}
+.file-badge{display:none;margin-top:10px;padding:10px 14px;background:#f0f7ff;border-radius:8px;font-size:14px;color:#0f3460;font-weight:600;border:1px solid #b3d4f5;}
+.btn-analyze{width:100%;margin-top:14px;padding:14px;border:none;border-radius:8px;font-size:16px;font-weight:600;cursor:pointer;background:linear-gradient(135deg,#0f3460,#1a1a2e);color:#fff;transition:all .2s;}
+.btn-analyze:hover{opacity:.9;transform:translateY(-1px);}
+.btn-analyze:disabled{opacity:.6;cursor:not-allowed;transform:none;}
+.loader{display:none;text-align:center;padding:36px;}
+.spinner{width:46px;height:46px;border:4px solid #e9ecef;border-top:4px solid #0f3460;border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 14px;}
+@keyframes spin{to{transform:rotate(360deg)}}
+.results{display:none;}
+.score-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;}
+.score-box{border-radius:12px;padding:22px;text-align:center;}
+.score-box .sc{font-size:44px;font-weight:700;line-height:1;}
+.score-box .lbl{font-size:13px;margin-top:6px;opacity:.9;}
+.score-box .vrd{font-size:12.5px;font-weight:600;margin-top:8px;background:rgba(255,255,255,.2);padding:3px 10px;border-radius:20px;display:inline-block;}
+.risk-high{background:linear-gradient(135deg,#ff4757,#c0392b);color:#fff;}
+.risk-medium{background:linear-gradient(135deg,#ffa502,#d35400);color:#fff;}
+.risk-low{background:linear-gradient(135deg,#2ed573,#1abc9c);color:#fff;}
+.risk-none{background:linear-gradient(135deg,#2ed573,#27ae60);color:#fff;}
+.section-label{font-size:15px;font-weight:700;color:#1a1a2e;margin:18px 0 10px;padding-bottom:6px;border-bottom:2px solid #e9ecef;}
+.match-item{background:#f8f9fa;border-left:3px solid #0f3460;border-radius:0 8px 8px 0;padding:11px 14px;margin-bottom:9px;}
+.match-score{font-weight:700;color:#0f3460;font-size:13.5px;}
+.match-title{font-size:13.5px;color:#333;margin-top:2px;}
+.match-src{font-size:12px;color:#888;margin-top:2px;}
+.indicators{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;}
+.ind{background:#f8f9fa;border-radius:8px;padding:12px;text-align:center;}
+.ind-val{font-size:20px;font-weight:700;color:#0f3460;}
+.ind-key{font-size:11.5px;color:#666;margin-top:2px;}
+
+/* ═══ v4 NEW: Two separate download buttons ═══ */
+.report-info-box{
+  background:#f0f7ff;border:1px solid #b3d4f5;border-radius:8px;
+  padding:12px 16px;margin-bottom:14px;font-size:13px;
+}
+.ri-row{display:flex;align-items:flex-start;gap:10px;margin-bottom:7px;}
+.ri-row:last-child{margin-bottom:0;}
+.dot{width:13px;height:13px;border-radius:50%;flex-shrink:0;margin-top:2px;}
+.dot-red{background:#e74c3c;}
+.dot-cyan{background:#00bcd4;}
+.report-btns{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.btn-report{
+  border:none;border-radius:10px;padding:16px 12px;font-size:14px;
+  font-weight:600;cursor:pointer;transition:all .2s;
+  display:flex;flex-direction:column;align-items:center;gap:4px;
+  line-height:1.3;
+}
+.btn-report:hover{transform:translateY(-2px);box-shadow:0 4px 14px rgba(0,0,0,.18);}
+.btn-report:disabled{opacity:.5;cursor:not-allowed;transform:none;}
+.btn-report .icon{font-size:24px;margin-bottom:2px;}
+.btn-report .sub{font-size:11px;font-weight:400;opacity:.85;}
+.btn-plag{background:linear-gradient(135deg,#e74c3c,#c0392b);color:#fff;}
+.btn-ai-dl{background:linear-gradient(135deg,#00bcd4,#006d80);color:#fff;}
+.report-id-note{font-size:11.5px;color:#aaa;text-align:center;margin-top:10px;}
+.msg-err{padding:11px 16px;background:#fce8e8;color:#c0392b;border:1px solid #e74c3c;border-radius:8px;margin-top:10px;font-size:13.5px;}
+@media(max-width:600px){
+  .score-grid{grid-template-columns:1fr;}
+  .indicators{grid-template-columns:1fr 1fr;}
+  .report-btns{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+
+<nav class="navbar">
+  <div class="navbar-brand">Integri<span>Check</span> <span style="color:#888;font-size:13px;font-weight:400;">v4</span></div>
+  <div class="navbar-links">
+    <span style="color:#4fc3f7;font-size:13px;">Academic Integrity Platform</span>
+    <a href="/dashboard">Dashboard →</a>
+  </div>
+</nav>
+
+<div class="hero">
+  <h2>Detect Plagiarism &amp; AI-Written Content</h2>
+  <p>Advanced ML ensemble — now with <strong>two separate reports</strong> just like Turnitin: a Plagiarism Report with colored highlights and an AI Writing Report with cyan highlights.</p>
+  <div class="badges">
+    <span class="badge">TF-IDF + Bigrams</span>
+    <span class="badge">SBERT Semantic</span>
+    <span class="badge">18-Feature AI Model</span>
+    <span class="badge">🔴 Plagiarism Report</span>
+    <span class="badge">🔵 AI Writing Report</span>
+    <span class="badge">Calibrated Scoring</span>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- INPUT CARD -->
+  <div class="card">
+    <div class="card-title">📝 Submit Document</div>
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('text',this)">Paste Text</button>
+      <button class="tab" onclick="switchTab('file',this)">Upload File</button>
+    </div>
+
+    <div id="tab-text">
+      <textarea id="textInput" placeholder="Paste your text here (minimum 50 characters)..."></textarea>
+      <div class="char-count" id="charCount">0 characters</div>
+    </div>
+
+    <div id="tab-file" style="display:none;">
+      <div class="upload-area" id="dropZone"
+           ondragover="ev.preventDefault();this.classList.add('drag')"
+           ondragleave="this.classList.remove('drag')"
+           ondrop="dropFile(event)"
+           onclick="document.getElementById('fileInput').click()">
+        <div class="upload-icon">📁</div>
+        <p><strong>Click to upload</strong> or drag and drop</p>
+        <p style="font-size:13px;color:#999;margin-top:4px;">PDF, DOCX, TXT — max 10 MB</p>
+        <input type="file" id="fileInput" accept=".pdf,.docx,.txt" onchange="handleFile(this.files[0])"/>
+      </div>
+      <div class="file-badge" id="fileBadge"></div>
+    </div>
+
+    <button class="btn-analyze" id="analyzeBtn" onclick="analyze()">Analyze Document</button>
+    <div class="msg-err" id="errorMsg" style="display:none;"></div>
+  </div>
+
+  <!-- LOADER -->
+  <div class="loader" id="loader">
+    <div class="spinner"></div>
+    <p style="color:#666;font-size:15px;">Analyzing your document…<br>
+       <small style="color:#aaa;">This may take 15–30 seconds</small></p>
+  </div>
+
+  <!-- RESULTS CARD -->
+  <div class="results card" id="results">
+    <div class="card-title">📊 Analysis Results</div>
+
+    <div class="score-grid">
+      <div class="score-box risk-low" id="plagBox">
+        <div class="sc" id="plagScore">—</div>
+        <div class="lbl">Plagiarism Score</div>
+        <div class="vrd" id="plagVerdict">—</div>
+      </div>
+      <div class="score-box risk-low" id="aiBox">
+        <div class="sc" id="aiScore">—</div>
+        <div class="lbl">AI Generated</div>
+        <div class="vrd" id="aiVerdict">—</div>
+      </div>
+    </div>
+
+    <div class="section-label">🔍 Plagiarism Matches</div>
+    <div id="plagMatches"></div>
+
+    <div class="section-label">🤖 AI Detection Indicators</div>
+    <div class="indicators" id="aiIndicators"></div>
+
+    <!-- ═══ v4: SEPARATE DOWNLOAD BUTTONS ═══ -->
+    <div class="section-label">📄 Download Reports</div>
+
+    <div class="report-info-box">
+      <div class="ri-row">
+        <span class="dot dot-red"></span>
+        <span><b>Plagiarism Report</b> — Colored highlights (Red/Orange/Blue/Green) showing matched sources, top sources list, match categories, similarity score.</span>
+      </div>
+      <div class="ri-row">
+        <span class="dot dot-cyan"></span>
+        <span><b>AI Writing Report</b> — Cyan highlights on AI-generated sentences, detection groups breakdown, FAQ section, AI score &amp; risk level.</span>
+      </div>
+    </div>
+
+    <div class="report-btns">
+      <button class="btn-report btn-plag" id="btnPlag" onclick="downloadReport('plagiarism')">
+        <span class="icon">📋</span>
+        Plagiarism Report
+        <span class="sub">Colored similarity highlights</span>
+      </button>
+      <button class="btn-report btn-ai-dl" id="btnAI" onclick="downloadReport('ai')">
+        <span class="icon">🤖</span>
+        AI Writing Report
+        <span class="sub">Cyan AI-sentence highlights</span>
+      </button>
+    </div>
+
+    <div class="report-id-note" id="reportIdNote"></div>
+  </div>
+
+</div><!-- /container -->
+
+<script>
+// ── State ────────────────────────────────────────────────────────────────────
+let currentTab = 'text';
+let lastResult = null;
+let selectedFile = null;
+
+// ── Char counter ─────────────────────────────────────────────────────────────
+document.getElementById('textInput').addEventListener('input', function(){
+  document.getElementById('charCount').textContent = this.value.length + ' characters';
+});
+
+// ── Tab switch ───────────────────────────────────────────────────────────────
+function switchTab(tab, el){
+  currentTab = tab;
+  document.getElementById('tab-text').style.display = tab === 'text' ? 'block' : 'none';
+  document.getElementById('tab-file').style.display = tab === 'file' ? 'block' : 'none';
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+}
+
+// ── File handling ─────────────────────────────────────────────────────────────
+function handleFile(file){
+  if(!file) return;
+  selectedFile = file;
+  const badge = document.getElementById('fileBadge');
+  badge.textContent = '📎  ' + file.name + '  (' + (file.size/1024).toFixed(1) + ' KB)';
+  badge.style.display = 'block';
+}
+
+function dropFile(ev){
+  ev.preventDefault();
+  document.getElementById('dropZone').classList.remove('drag');
+  const f = ev.dataTransfer.files[0];
+  if(f){ document.getElementById('fileInput').files = ev.dataTransfer.files; handleFile(f); }
+}
+
+// ── Risk CSS class ────────────────────────────────────────────────────────────
+function riskClass(risk){
+  return {'HIGH':'risk-high','MEDIUM':'risk-medium','LOW':'risk-low','NONE':'risk-none'}[risk||''] || 'risk-low';
+}
+
+// ── Analyze ───────────────────────────────────────────────────────────────────
+async function analyze(){
+  const btn = document.getElementById('analyzeBtn');
+  clearError();
+  document.getElementById('results').style.display = 'none';
+  btn.disabled = true;
+  btn.textContent = 'Analyzing…';
+  document.getElementById('loader').style.display = 'block';
+  lastResult = null;
+
+  try{
+    let resp;
+    if(currentTab === 'text'){
+      const text = document.getElementById('textInput').value.trim();
+      if(!text || text.length < 50){ showErr('Please enter at least 50 characters.'); return; }
+      resp = await fetch('/api/analyze/text',{
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({text})
+      });
+    } else {
+      const file = selectedFile || document.getElementById('fileInput').files[0];
+      if(!file){ showErr('Please select a file.'); return; }
+      const fd = new FormData(); fd.append('file', file);
+      resp = await fetch('/api/analyze/file',{method:'POST', body:fd});
+    }
+
+    const data = await resp.json();
+    if(!resp.ok || data.error){ showErr(data.error || 'Analysis failed.'); return; }
+    lastResult = data;
+    showResults(data);
+
+  } catch(e){
+    showErr('Connection error: ' + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Analyze Document';
+    document.getElementById('loader').style.display = 'none';
+  }
+}
+
+// ── Render results ────────────────────────────────────────────────────────────
+function showResults(data){
+  const plag = data.plagiarism   || {};
+  const ai   = data.ai_detection || {};
+
+  const ps  = +(plag.final_score  || 0);
+  const as_ = +(ai.ai_probability || 0);
+
+  document.getElementById('plagScore').textContent   = ps.toFixed(1) + '%';
+  document.getElementById('aiScore').textContent     = as_.toFixed(1) + '%';
+  document.getElementById('plagVerdict').textContent = plag.verdict || '';
+  document.getElementById('aiVerdict').textContent   = ai.verdict   || '';
+  document.getElementById('plagBox').className = 'score-box ' + riskClass(plag.risk_level);
+  document.getElementById('aiBox').className   = 'score-box ' + riskClass(ai.risk_level);
+
+  // Matches
+  const ml = document.getElementById('plagMatches');
+  const matches = [
+    ...(plag.sbert_matches||[]).map(m=>({...m,type:'Semantic',score:m.sbert_score})),
+    ...(plag.tfidf_matches||[]).map(m=>({...m,type:'TF-IDF',  score:m.tfidf_score}))
+  ].sort((a,b)=>b.score-a.score);
+
+  ml.innerHTML = matches.length === 0
+    ? '<p style="color:#27ae60;font-size:14px;padding:6px 0;">✓ No significant matches found.</p>'
+    : matches.slice(0,6).map(m=>`
+        <div class="match-item">
+          <div class="match-score">${(m.score*100).toFixed(1)}% — ${m.type}</div>
+          <div class="match-title">${m.title||'Unknown source'}</div>
+          <div class="match-src">Source: ${m.source||'—'}</div>
+        </div>`).join('');
+
+  // AI indicators
+  document.getElementById('aiIndicators').innerHTML = `
+    <div class="ind"><div class="ind-val">${as_.toFixed(1)}%</div><div class="ind-key">AI Probability</div></div>
+    <div class="ind"><div class="ind-val">${(100-as_).toFixed(1)}%</div><div class="ind-key">Human Written</div></div>
+    <div class="ind"><div class="ind-val">${ai.risk_level||'—'}</div><div class="ind-key">Risk Level</div></div>
+    <div class="ind"><div class="ind-val">${plag.word_count||ai.word_count||data.word_count||'—'}</div><div class="ind-key">Word Count</div></div>`;
+
+  document.getElementById('reportIdNote').textContent = 'Report ID: ' + (data.report_id||'—');
+  document.getElementById('results').style.display = 'block';
+  document.getElementById('results').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+// ── Download report (v4 NEW: type = 'plagiarism' | 'ai') ─────────────────────
+async function downloadReport(type){
+  if(!lastResult){ showErr('Please run an analysis first.'); return; }
+
+  const isAI   = type === 'ai';
+  const btnEl  = document.getElementById(isAI ? 'btnAI' : 'btnPlag');
+  const origHTML = btnEl.innerHTML;
+
+  btnEl.innerHTML  = `<span class="icon">${isAI?'⏳':'⏳'}</span>Generating…<span class="sub">Please wait</span>`;
+  btnEl.disabled   = true;
+  clearError();
+
+  try{
+    const fullText = currentTab === 'text'
+      ? document.getElementById('textInput').value
+      : (lastResult.full_text || '');
+
+    const resp = await fetch(`/api/report/${lastResult.report_id}/${type}`, {
+      method:  'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        plagiarism:   lastResult.plagiarism,
+        ai_detection: lastResult.ai_detection,
+        text:         fullText,
+        word_count:   lastResult.word_count,
+        char_count:   lastResult.char_count,
+        num_pages:    lastResult.num_pages,
+        file_size:    lastResult.file_size,
+        meta:{
+          student_name: 'Student',
+          doc_title:    lastResult.filename || 'Submitted Document',
+          file_name:    lastResult.filename || 'document',
+          file_size:    lastResult.file_size || 'N/A',
+        }
+      })
+    });
+
+    if(!resp.ok){
+      const e = await resp.json();
+      showErr('Report generation failed: ' + (e.error||'Unknown error'));
+      return;
+    }
+
+    const blob     = await resp.blob();
+    const a        = document.createElement('a');
+    a.href         = URL.createObjectURL(blob);
+    a.download     = isAI
+      ? `AI_Writing_Report_${lastResult.report_id}.pdf`
+      : `Plagiarism_Report_${lastResult.report_id}.pdf`;
+    document.body.appendChild(a); a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(a.href);
+
+  } catch(e){
+    showErr('Download error: ' + e.message);
+  } finally {
+    btnEl.innerHTML = origHTML;
+    btnEl.disabled  = false;
+  }
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function showErr(msg){
+  const el = document.getElementById('errorMsg');
+  el.textContent = '⚠  ' + msg;
+  el.style.display = 'block';
+  document.getElementById('loader').style.display  = 'none';
+  document.getElementById('analyzeBtn').disabled   = false;
+  document.getElementById('analyzeBtn').textContent = 'Analyze Document';
+}
+function clearError(){ document.getElementById('errorMsg').style.display='none'; }
+</script>
+</body>
+</html>
